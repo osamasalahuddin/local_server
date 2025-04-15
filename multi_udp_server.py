@@ -1,11 +1,15 @@
 import os
 import sys
 import socket
+import asyncio
 import threading
 import ctypes
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from datetime import datetime
+
+from tapo import ApiClient
+from tapo.requests import Color
 
 # ======================== SETTINGS ========================
 UDP_PORTS = [50000, 50001, 50002, 50050]
@@ -176,9 +180,19 @@ def start_gui():
         t.start()
 
     root.mainloop()
+# ======================== TAPO ========================
+async def tapo_set():
+    client = ApiClient("osama.salahuddin@live.com", "TPl!nkR0uT3rM")
+    device = await client.l530("192.168.0.159")
+
+    await device.on()
+    await asyncio.sleep(2)
+    await device.off()
+
 
 # ======================== MAIN ========================
 
 if __name__ == "__main__":
     hide_console()
+    asyncio.run(tapo_set())
     start_gui()
