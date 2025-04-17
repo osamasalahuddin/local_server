@@ -10,6 +10,7 @@ from datetime import datetime
 
 from tapo import ApiClient
 from tapo.requests import Color
+from tapo_manager import create_manager_from_config
 
 # ======================== SETTINGS ========================
 UDP_PORTS = [50000, 50001, 50002, 50050]
@@ -23,6 +24,8 @@ console_visible = False
 last_value_labels = {}
 live_feed_box = None
 log_lock = threading.Lock()
+
+tapo_manager = None
 
 # ======================== UTILITIES ========================
 
@@ -180,19 +183,31 @@ def start_gui():
         t.start()
 
     root.mainloop()
-# ======================== TAPO ========================
-async def tapo_set():
-    client = ApiClient("osama.salahuddin@live.com", "TPl!nkR0uT3rM")
-    device = await client.l530("192.168.0.159")
 
-    await device.on()
-    await asyncio.sleep(2)
-    await device.off()
+# ======================== TAPO ========================
+def init_tapo_devices():
+    global tapo_manager
+
+    async def setup():
+        tapo_manager = await create_manager_from_config()
+        await tapo_manager.blink("bulb_main_1", duration=2)
+        await tapo_manager.blink("bulb_main_2", duration=2)
+        await tapo_manager.blink("bulb_bed", duration=2)
+
+    threading.Thread(target=lambda: asyncio.run(setup()), daemon=True).start()
+# async def tapo_set():
+#     client = ApiClient("osama.salahuddin@live.com", "TPl!nkR0uT3rM")
+#     device = await client.l530("192.168.0.159")
+
+#     await device.on()
+#     await asyncio.sleep(2)
+#     await device.off()
 
 
 # ======================== MAIN ========================
 
 if __name__ == "__main__":
     hide_console()
-    asyncio.run(tapo_set())
+    # asyncio.run(tapo_set())
+    init_tapo_devices()
     start_gui()
