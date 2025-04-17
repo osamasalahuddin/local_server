@@ -1,0 +1,20 @@
+tapo_credentials:
+  email: your@email.com
+  password: yourpassword
+
+devices:
+  bulb_main_1:
+    ip: 192.168.0.80
+    type: bulb
+
+  bulb_main_2:
+    ip: 192.168.0.159
+    type: bulb
+
+  bulb_bed:
+    ip: 192.168.0.239
+    type: bulb
+
+  led_strip_1:
+    ip: 192.168.0.131
+    type: led_strip
