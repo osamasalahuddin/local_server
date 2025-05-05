@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UDP Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  /* ---- dark theme --------------------------------------------------- */
+  :root {
+    --bg: #1e1e1e;
+    --fg: #ffffff;
+    --card: #2b2b2b;
+    --header: #121212;
+    --feed-bg: #111;
+    --shadow: #0006;
+  }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  header { padding:10px 16px; background:var(--header); font-size:24px }
+  /* ---- layout ------------------------------------------------------- */
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+          gap:16px; padding:16px }
+  .card { background:var(--card); border-radius:10px; padding:16px;
+          box-shadow:0 2px 6px var(--shadow) }
+  .title{ font-size:18px; margin-bottom:8px; display:flex; gap:8px; align-items:center}
+  .value{ min-height:24px; font-size:16px; word-break:break-word }
+  pre#feed{ height:300px; overflow:auto; background:var(--feed-bg);
+            color:var(--fg); font-family:Consolas,monospace; padding:8px;
+            border-radius:6px; margin:0 }
+  /* ---- button ------------------------------------------------------- */
+  #editBtn{ margin:12px 16px; padding:6px 12px; background:#444;
+            color:var(--fg); border:1px solid #666; border-radius:6px;
+            cursor:pointer }
+  #editBtn:hover{ background:#555 }
+  /* ---- editor panel ------------------------------------------------- */
+  #editor{ position:fixed; top:10%; left:50%; transform:translateX(-50%);
+           width:80%; max-width:700px; height:70%; display:none;
+           background:var(--card); border:1px solid #555; border-radius:8px;
+           box-shadow:0 4px 12px #000a; z-index:10; padding:12px;
+           flex-direction:column }
+  #devTxt{ width:100%; height:70%; resize:none; background:var(--feed-bg);
+           color:var(--fg); font-family:monospace; border:none; padding:8px }
+  #editor button{ padding:6px 12px; margin-left:4px; cursor:pointer }
+  #toast{ font-size:14px; padding-top:6px }
+</style>
+</head>
+<body>
+<header>UDP Dashboard 🌡️ 💡 💧</header>
+
+<button id="editBtn">✏️ Edit devices.yaml</button>
+
+<div class="grid">
+  <div class="card">
+    <div class="title">🌡️ Port 50000</div>
+    <div class="value" id="v50000">(waiting…)</div>
+  </div>
+  <div class="card">
+    <div class="title">💡 Port 50001</div>
+    <div class="value" id="v50001">(waiting…)</div>
+  </div>
+  <div class="card">
+    <div class="title">💧 Port 50002</div>
+    <div class="value" id="v50002">(waiting…)</div>
+  </div>
+  <div class="card" style="grid-column:1/-1">
+    <div class="title">📜 Live feed (50050)</div>
+    <pre id="feed"></pre>
+  </div>
+</div>
+
+<!-- ---------- floating YAML editor --------------------------------- -->
+<div id="editor" style="display:none;">
+  <h3 style="margin-top:0">devices.yaml</h3>
+  <textarea id="devTxt" spellcheck="false"></textarea>
+  <div style="text-align:right; margin-top:8px">
+    <button id="cancelEd">Cancel</button>
+    <button id="saveEd">Save</button>
+  </div>
+  <div id="toast" style="display:none"></div>
+</div>
+
+<script>
+/* ---------- socket.io live updates ------------------------------ */
+const sio = io();
+sio.on("latest", d=>{
+  const el = document.getElementById("v"+d.port);
+  if(el) el.textContent = d.msg;
+});
+sio.on("feed", d=>{
+  const feed = document.getElementById("feed");
+  feed.textContent += d.msg + "\n";
+  feed.scrollTop = feed.scrollHeight;
+});
+
+/* ---------- devices.yaml editor --------------------------------- */
+const editBtn = document.getElementById("editBtn");
+const editor  = document.getElementById("editor");
+const devTxt  = document.getElementById("devTxt");
+const cancelEd= document.getElementById("cancelEd");
+const saveEd  = document.getElementById("saveEd");
+const toast   = document.getElementById("toast");
+
+editBtn.onclick = async ()=>{
+  const r = await fetch("/api/devices");
+  const j = await r.json();
+  devTxt.value = j.text;
+  toast.style.display = "none";
+  editor.style.display = "flex";
+};
+
+cancelEd.onclick = ()=>{ editor.style.display = "none"; };
+
+saveEd.onclick = async ()=>{
+  const r = await fetch("/api/devices",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({text:devTxt.value})
+  });
+  if(r.ok){
+    toast.textContent="✅ saved";
+    toast.style.color="#0f0";
+    toast.style.display="block";
+    setTimeout(()=>editor.style.display="none",800);
+  }else{
+    const msg=(await r.json()).msg;
+    toast.textContent="❌ "+msg;
+    toast.style.color="#f44";
+    toast.style.display="block";
+  }
+};
+</script>
+</body>
+</html>
