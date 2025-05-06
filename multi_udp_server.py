@@ -27,6 +27,12 @@ log_lock = threading.Lock()
 
 tapo_manager = None
 
+# ======================== FOR WEB ==========================
+latest = {50000: "(waiting…)", 50001: "(waiting…)", 50002: "(waiting…)"}
+feed_50050 = []
+PUBLISH_FN = lambda p, m: None    # will be overridden by web_dashboard
+
+
 # ======================== UTILITIES ========================
 
 def hide_console():
@@ -77,6 +83,13 @@ def udp_listener(port):
                     message = data.decode("utf-8")
                 except UnicodeDecodeError:
                     message = data.decode("utf-8", errors="replace")
+
+                if port == 50050:
+                    feed_50050.append(message)
+                else:
+                    latest[port] = message
+
+                PUBLISH_FN(port, message)   # notify web layer
 
                 log_message(port, addr, message)
 
@@ -203,6 +216,12 @@ def init_tapo_devices():
 #     await asyncio.sleep(2)
 #     await device.off()
 
+
+# ======================== STARTUP WRAPPTER ============
+def start():
+    for port in UDP_PORTS:
+        t = threading.Thread(target=udp_listener, args=(port,), daemon=True)
+        t.start()
 
 # ======================== MAIN ========================
 
