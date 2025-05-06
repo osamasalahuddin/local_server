@@ -189,16 +189,16 @@ def save_devices():
     return jsonify({"status": "ok"})
 
 # ---------- REST-ish endpoints used by the table JS --------------------
+ALLOWED_TYPES = ("bulb", "plug", "led_strip")      # ← add near top
+
 @app.route("/api/device", methods=["POST"])
 def api_add_device():
-    """
-    JSON body: {name:"living_room", ip:"192.168.1.60", type:"bulb"}
-    Adds or replaces that entry.
-    """
     j = request.get_json(force=True)
-    name, ip, dtyp = j.get("name"), j.get("ip"), j.get("type")
+    name, ip, dtyp = j.get("name", "").strip(), j.get("ip", "").strip(), j.get("type", "").strip()
     if not (name and ip):
         return jsonify({"status": "error", "msg": "name and ip required"}), 400
+    if dtyp and dtyp not in ALLOWED_TYPES:
+        return jsonify({"status": "error", "msg": "type must be bulb / plug / led_strip"}), 400
 
     devmap = _load_devices_map()
     devmap[name] = {"ip": ip, "type": dtyp}

@@ -27,11 +27,19 @@
 
 <div class="addbox">
   <input id="name"  placeholder="name">
-  <input id="type"  placeholder="type (optional)">
-  <input id="ip"    placeholder="ip e.g. 192.168.1.50">
+  <select id="type">
+      <option value="">type</option>
+      <option value="bulb">bulb</option>
+      <option value="plug">plug</option>
+      <option value="led_strip">led_strip</option>
+  </select>
+  <input id="ip" placeholder="ip e.g. 192.168.1.50">
   <button id="addBtn">Add / Update</button>
   <span id="msg" class="msg"></span>
 </div>
+
+.addbox select{margin-right:6px;padding:6px 8px;border:none;border-radius:4px;background:#222;color:#fff}
+
 
 <table id="tbl">
 <thead><tr><th>Name</th><th>Type</th><th>IP</th><th></th></tr></thead>
@@ -69,16 +77,31 @@ async function loadTable(){
 }
 
 async function addDevice(){
-  const name=document.getElementById("name").value.trim();
-  const ip  =document.getElementById("ip").value.trim();
-  const type=document.getElementById("type").value.trim();
-  const msg=document.getElementById("msg");
-  if(!name||!ip){ msg.textContent="name and ip required"; msg.className="msg err"; return;}
-  const r=await fetch("/api/device",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,ip,type})});
-  if(r.ok){ msg.textContent="saved"; msg.className="msg ok"; loadTable();}
-  else{ msg.textContent="error"; msg.className="msg err";}
+  const name = document.getElementById("name").value.trim();
+  const ip   = document.getElementById("ip").value.trim();
+  const type = document.getElementById("type").value;          // from select
+  const msg  = document.getElementById("msg");
+
+  if(!name || !ip){
+    msg.textContent = "name and ip required";
+    msg.className = "msg err"; return;
+  }
+  const r = await fetch("/api/device",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name, ip, type})
+  });
+  if(r.ok){
+    msg.textContent = "saved";
+    msg.className = "msg ok";
+    loadTable();
+  }else{
+    const txt = await r.json();
+    msg.textContent = txt.msg || "error";
+    msg.className = "msg err";
+  }
 }
+
 
 async function deleteDevice(name){
   if(!confirm(`Delete ${name}?`)) return;
